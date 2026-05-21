@@ -152,8 +152,10 @@ export default function App() {
 
 “${q.text}”
 
-하루 한 문장으로 마음을 깨우는 앱
-하루지혜`;
+마음이 힘들 때 꺼내보는 하루 한 문장
+하루지혜
+
+https://haru-jihye-app.vercel.app`;
     if (navigator.share) {
       navigator.share({ title: "하루지혜", text: message });
     } else {
@@ -523,3 +525,4 @@ const styles = {
     boxShadow: "0 8px 18px rgba(245,158,11,0.35)",
   },
 };
+
