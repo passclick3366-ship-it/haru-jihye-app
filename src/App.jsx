@@ -148,6 +148,378 @@ export default function App() {
   }
 
   function shareQuote(q) {
-    const message = `오늘의 지혜\n\n“${q.text}”\n\n하루 한 문장으로 마음을 깨우는 앱\n하루지혜`;
+    const message = `오늘의 지혜
+
+“${q.text}”
+
+하루 한 문장으로 마음을 깨우는 앱
+하루지혜`;
     if (navigator.share) {
-      navigator.share({ title: "하루지혜", text: messag
+      navigator.share({ title: "하루지혜", text: message });
+    } else {
+      navigator.clipboard.writeText(message);
+      alert("명언이 복사되었습니다.");
+    }
+  }
+
+  function QuoteCard({ q, premium = false }) {
+    const isFavorite = favorites.includes(q.text);
+    return (
+      <div style={premium ? styles.premiumCard : styles.card}>
+        <div style={styles.cardTop}>
+          <span style={styles.category}>{q.category}</span>
+          <span style={styles.badge}>하루지혜</span>
+        </div>
+        <div style={styles.quoteMark}>“</div>
+        <h2 style={premium ? styles.heroQuote : styles.quote}>{q.text}</h2>
+        <p style={styles.desc}>{q.desc}</p>
+        <div style={styles.buttonRow}>
+          <button style={isFavorite ? styles.savedButton : styles.button} onClick={() => toggleFavorite(q.text)}>
+            {isFavorite ? "저장됨" : "저장"}
+          </button>
+          <button style={styles.button} onClick={() => shareQuote(q)}>공유</button>
+          <button style={styles.outlineButton} onClick={openYoutube}>영상 보기</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.app}>
+      <div style={styles.backgroundGlow}></div>
+
+      <header style={styles.header}>
+        <div style={styles.logoBadge}>智慧</div>
+        <h1 style={styles.logo}>하루지혜</h1>
+        <p style={styles.subtitle}>매일 아침 마음을 깨우는 고품격 인생 한마디</p>
+      </header>
+
+      {tab === "home" && (
+        <main style={styles.main}>
+          <section style={styles.hero}>
+            <p style={styles.heroSmall}>오늘도 잘 살아내고 있는 당신에게</p>
+            <h2 style={styles.heroTitle}>하루 한 문장의 지혜를 전합니다.</h2>
+          </section>
+          <QuoteCard q={homeQuote} premium />
+          <button style={styles.randomButton} onClick={changeHomeQuote}>다른 명언 보기</button>
+          <div style={styles.ad}>광고 영역</div>
+        </main>
+      )}
+
+      {tab === "quotes" && (
+        <main style={styles.main}>
+          <div style={styles.searchBox}>
+            <input
+              style={styles.input}
+              placeholder="원하는 명언을 검색하세요"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+            <div style={styles.categoryButtons}>
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  style={selectedCategory === cat ? styles.categoryActiveButton : styles.categoryButton}
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+          {filteredQuotes.slice(0, 200).map((q, i) => <QuoteCard key={i} q={q} />)}
+          {filteredQuotes.length > 200 && (
+            <p style={styles.notice}>검색 결과가 많아 상위 200개만 먼저 보여줍니다. 원하는 주제로 검색하거나 카테고리를 선택해보세요.</p>
+          )}
+        </main>
+      )}
+
+      {tab === "youtube" && (
+        <main style={styles.main}>
+          <div style={styles.youtubeCard}>
+            <div style={styles.youtubeIcon}>▶</div>
+            <h2 style={styles.title}>시니어의 지혜상자</h2>
+            <p style={styles.desc}>더 깊은 인생 이야기와 노후, 건강, 인간관계의 지혜를 영상으로 이어보세요.</p>
+            <button style={styles.bigButton} onClick={openYoutube}>유튜브 채널 바로가기</button>
+          </div>
+          <div style={styles.ad}>광고 영역</div>
+        </main>
+      )}
+
+      {tab === "favorites" && (
+        <main style={styles.main}>
+          <h2 style={styles.title}>저장한 명언</h2>
+          {favoriteQuotes.length === 0 ? (
+            <p style={styles.empty}>아직 저장한 명언이 없습니다.</p>
+          ) : (
+            favoriteQuotes.slice(0, 200).map((q, i) => <QuoteCard key={i} q={q} />)
+          )}
+        </main>
+      )}
+
+      <nav style={styles.nav}>
+        <button style={tab === "home" ? styles.navActive : styles.navBtn} onClick={() => setTab("home")}>홈</button>
+        <button style={tab === "quotes" ? styles.navActive : styles.navBtn} onClick={() => setTab("quotes")}>명언</button>
+        <button style={tab === "youtube" ? styles.navActive : styles.navBtn} onClick={() => setTab("youtube")}>영상</button>
+        <button style={tab === "favorites" ? styles.navActive : styles.navBtn} onClick={() => setTab("favorites")}>저장</button>
+      </nav>
+    </div>
+  );
+}
+
+const styles = {
+  app: {
+    minHeight: "100vh",
+    background: "linear-gradient(160deg, #1c1208 0%, #3b220f 22%, #fff7ed 42%, #fffaf0 100%)",
+    color: "#000000",
+    paddingBottom: 92,
+    fontFamily: "Arial, sans-serif",
+    position: "relative",
+    overflowX: "hidden",
+  },
+  backgroundGlow: {
+    position: "fixed",
+    top: -160,
+    right: -120,
+    width: 320,
+    height: 320,
+    borderRadius: "50%",
+    background: "rgba(245, 158, 11, 0.45)",
+    filter: "blur(50px)",
+    pointerEvents: "none",
+  },
+  header: { padding: "26px 18px 14px", textAlign: "center", color: "white" },
+  logoBadge: {
+    width: 58,
+    height: 58,
+    margin: "0 auto 10px",
+    borderRadius: 18,
+    background: "linear-gradient(135deg, #facc15, #f97316)",
+    color: "#111111",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 22,
+    fontWeight: 900,
+    boxShadow: "0 12px 30px rgba(0,0,0,0.28)",
+  },
+  logo: { margin: 0, fontSize: 38, fontWeight: 900, letterSpacing: "-1px", color: "#ffffff" },
+  subtitle: { margin: "8px 0 0", color: "#fff7ed", fontWeight: 800, fontSize: 15 },
+  main: { maxWidth: 760, margin: "0 auto", padding: "12px 16px" },
+  hero: {
+    background: "linear-gradient(135deg, #f59e0b, #ea580c)",
+    color: "#111111",
+    padding: 26,
+    borderRadius: 30,
+    marginBottom: 18,
+    boxShadow: "0 18px 42px rgba(92, 38, 4, 0.28)",
+    border: "1px solid rgba(255,255,255,0.45)",
+  },
+  heroSmall: { margin: 0, fontSize: 15, fontWeight: 900, color: "#111111", opacity: 1 },
+  heroTitle: { margin: "8px 0 0", fontSize: 25, lineHeight: 1.35, fontWeight: 900, wordBreak: "keep-all", color: "#000000" },
+  premiumCard: {
+    background: "linear-gradient(180deg, #ffffff 0%, #fff7ed 100%)",
+    color: "#000000",
+    padding: 28,
+    borderRadius: 32,
+    marginBottom: 16,
+    boxShadow: "0 24px 54px rgba(0,0,0,0.16)",
+    border: "1px solid rgba(245,158,11,0.35)",
+    opacity: 1,
+  },
+  card: {
+    background: "#ffffff",
+    color: "#000000",
+    padding: 24,
+    borderRadius: 26,
+    marginBottom: 16,
+    boxShadow: "0 12px 30px rgba(0,0,0,0.10)",
+    border: "1px solid rgba(146,64,14,0.12)",
+    opacity: 1,
+  },
+  cardTop: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 },
+  category: {
+    display: "inline-block",
+    background: "#fef3c7",
+    color: "#000000",
+    padding: "8px 15px",
+    borderRadius: 999,
+    fontWeight: 900,
+    fontSize: 15,
+    opacity: 1,
+  },
+  badge: { color: "#7c2d12", fontWeight: 900, fontSize: 13 },
+  quoteMark: { fontSize: 54, lineHeight: 0.7, color: "#f59e0b", fontWeight: 900, marginTop: 12 },
+  heroQuote: { fontSize: 33, lineHeight: 1.45, margin: "0 0 12px", wordBreak: "keep-all", color: "#000000", fontWeight: 900, opacity: 1 },
+  quote: { fontSize: 29, lineHeight: 1.45, margin: "0 0 12px", wordBreak: "keep-all", color: "#000000", fontWeight: 900, opacity: 1 },
+  desc: { color: "#111111", lineHeight: 1.75, fontSize: 18, fontWeight: 800, opacity: 1 },
+  title: { fontSize: 28, margin: "0 0 14px", fontWeight: 900, color: "#000000" },
+  buttonRow: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 20, opacity: 1 },
+  button: {
+    border: 0,
+    background: "linear-gradient(135deg, #f59e0b, #f97316)",
+    color: "#000000",
+    padding: "14px 18px",
+    borderRadius: 16,
+    fontWeight: 900,
+    cursor: "pointer",
+    fontSize: 15,
+    boxShadow: "0 8px 18px rgba(245,158,11,0.26)",
+    opacity: 1,
+  },
+  savedButton: {
+    border: 0,
+    background: "#111111",
+    color: "#ffffff",
+    padding: "14px 18px",
+    borderRadius: 16,
+    fontWeight: 900,
+    cursor: "pointer",
+    fontSize: 15,
+  },
+  outlineButton: {
+    border: "2px solid #f59e0b",
+    background: "#ffffff",
+    color: "#000000",
+    padding: "12px 16px",
+    borderRadius: 16,
+    fontWeight: 900,
+    cursor: "pointer",
+    fontSize: 15,
+    opacity: 1,
+  },
+  bigButton: {
+    width: "100%",
+    border: 0,
+    background: "linear-gradient(135deg, #dc2626, #991b1b)",
+    color: "white",
+    padding: 17,
+    borderRadius: 18,
+    fontSize: 18,
+    fontWeight: 900,
+    cursor: "pointer",
+    boxShadow: "0 12px 26px rgba(220,38,38,0.24)",
+  },
+  randomButton: {
+    width: "100%",
+    border: 0,
+    background: "linear-gradient(135deg, #7c2d12, #431407)",
+    color: "white",
+    padding: 18,
+    borderRadius: 20,
+    fontSize: 19,
+    fontWeight: 900,
+    cursor: "pointer",
+    marginBottom: 16,
+    boxShadow: "0 14px 28px rgba(67,20,7,0.28)",
+  },
+  searchBox: {
+    background: "rgba(255,255,255,0.92)",
+    padding: 14,
+    borderRadius: 24,
+    marginBottom: 16,
+    boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
+  },
+  input: {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: 17,
+    borderRadius: 18,
+    border: "2px solid #f59e0b",
+    fontSize: 17,
+    marginBottom: 12,
+    color: "#000000",
+    fontWeight: 800,
+    outline: "none",
+  },
+  categoryButtons: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 2 },
+  categoryButton: {
+    border: 0,
+    background: "#ffffff",
+    color: "#000000",
+    padding: "11px 15px",
+    borderRadius: 999,
+    fontWeight: 900,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+  },
+  categoryActiveButton: {
+    border: 0,
+    background: "#f59e0b",
+    color: "#000000",
+    padding: "11px 15px",
+    borderRadius: 999,
+    fontWeight: 900,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    boxShadow: "0 8px 18px rgba(245,158,11,0.35)",
+  },
+  ad: {
+    background: "rgba(255,255,255,0.82)",
+    border: "1px dashed #92400e",
+    padding: 20,
+    borderRadius: 20,
+    textAlign: "center",
+    color: "#111111",
+    fontWeight: 900,
+  },
+  empty: { background: "white", padding: 30, borderRadius: 22, textAlign: "center", color: "#111111", fontWeight: 900 },
+  notice: { background: "#fff7ed", color: "#111111", padding: 16, borderRadius: 16, textAlign: "center", fontWeight: 900, lineHeight: 1.6 },
+  youtubeCard: {
+    background: "#ffffff",
+    padding: 26,
+    borderRadius: 30,
+    marginBottom: 16,
+    boxShadow: "0 18px 42px rgba(0,0,0,0.14)",
+  },
+  youtubeIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    background: "#dc2626",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 24,
+    marginBottom: 16,
+    fontWeight: 900,
+  },
+  nav: {
+    position: "fixed",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: 7,
+    background: "rgba(255,255,255,0.96)",
+    padding: "10px 10px 12px",
+    boxShadow: "0 -12px 28px rgba(0,0,0,0.16)",
+    backdropFilter: "blur(12px)",
+    borderTop: "1px solid rgba(146,64,14,0.18)",
+  },
+  navBtn: {
+    border: 0,
+    background: "#ffffff",
+    color: "#000000",
+    padding: 15,
+    borderRadius: 16,
+    fontWeight: 900,
+    cursor: "pointer",
+    fontSize: 15,
+    opacity: 1,
+  },
+  navActive: {
+    border: 0,
+    background: "linear-gradient(135deg, #f59e0b, #f97316)",
+    color: "#000000",
+    padding: 15,
+    borderRadius: 16,
+    fontWeight: 900,
+    cursor: "pointer",
+    fontSize: 15,
+    boxShadow: "0 8px 18px rgba(245,158,11,0.35)",
+  },
+};
