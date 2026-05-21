@@ -1,0 +1,16 @@
+{
+  "name": "하루지혜",
+  "short_name": "하루지혜",
+  "description": "매일 아침 마음을 깨우는 인생 한마디",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff7ed",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
