@@ -148,20 +148,107 @@ export default function App() {
   }
 
   function shareQuote(q) {
-    const message = `오늘의 지혜
-
-“${q.text}”
-
-마음이 힘들 때 꺼내보는 하루 한 문장
-하루지혜
-
-https://haru-jihye-app.vercel.app`;
+    const message = `오늘의 지혜\n\n“${q.text}”\n\n마음이 힘들 때 꺼내보는 하루 한 문장\n하루지혜\n\nhttps://haru-jihye-app.vercel.app`;
     if (navigator.share) {
       navigator.share({ title: "하루지혜", text: message });
     } else {
       navigator.clipboard.writeText(message);
       alert("명언이 복사되었습니다.");
     }
+  }
+
+  function downloadQuoteImage(q) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 1350;
+    const ctx = canvas.getContext("2d");
+
+    const gradient = ctx.createLinearGradient(0, 0, 1080, 1350);
+    gradient.addColorStop(0, "#2b1608");
+    gradient.addColorStop(0.35, "#7c2d12");
+    gradient.addColorStop(1, "#fff7ed");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 1080, 1350);
+
+    ctx.fillStyle = "rgba(255,255,255,0.94)";
+    roundRect(ctx, 90, 170, 900, 920, 64);
+    ctx.fill();
+
+    ctx.fillStyle = "#f59e0b";
+    ctx.beginPath();
+    ctx.arc(540, 260, 46, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#111111";
+    ctx.textAlign = "center";
+    ctx.font = "900 58px Arial";
+    ctx.fillText("하루지혜", 540, 365);
+
+    ctx.fillStyle = "#92400e";
+    ctx.font = "800 34px Arial";
+    ctx.fillText(q.category, 540, 430);
+
+    ctx.fillStyle = "#000000";
+    ctx.font = "900 56px Arial";
+    const quoteLines = wrapText(ctx, `“${q.text}”`, 780);
+    let y = 570;
+    quoteLines.forEach((line) => {
+      ctx.fillText(line, 540, y);
+      y += 78;
+    });
+
+    ctx.fillStyle = "#292524";
+    ctx.font = "800 32px Arial";
+    const descLines = wrapText(ctx, q.desc, 760);
+    y += 60;
+    descLines.forEach((line) => {
+      ctx.fillText(line, 540, y);
+      y += 50;
+    });
+
+    ctx.fillStyle = "#7c2d12";
+    ctx.font = "900 34px Arial";
+    ctx.fillText("마음이 힘들 때 꺼내보는 하루 한 문장", 540, 1135);
+
+    ctx.fillStyle = "#111111";
+    ctx.font = "800 28px Arial";
+    ctx.fillText("haru-jihye-app.vercel.app", 540, 1195);
+
+    const link = document.createElement("a");
+    link.download = "haru-jihye-quote.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+
+  function wrapText(ctx, text, maxWidth) {
+    const words = text.split(" ");
+    const lines = [];
+    let line = "";
+    words.forEach((word) => {
+      const testLine = line ? `${line} ${word}` : word;
+      if (ctx.measureText(testLine).width > maxWidth && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = testLine;
+      }
+    });
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  function roundRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
   }
 
   function QuoteCard({ q, premium = false }) {
@@ -180,6 +267,7 @@ https://haru-jihye-app.vercel.app`;
             {isFavorite ? "저장됨" : "저장"}
           </button>
           <button style={styles.button} onClick={() => shareQuote(q)}>공유</button>
+          <button style={styles.button} onClick={() => downloadQuoteImage(q)}>이미지</button>
           <button style={styles.outlineButton} onClick={openYoutube}>영상 보기</button>
         </div>
       </div>
