@@ -95,52 +95,81 @@ const descs = [
   "오늘의 한 문장이 내일의 태도를 바꿀 수 있습니다.",
 ];
 
-const quotes = Array.from({ length: 100000 }, (_, i) => {
-  const category = quoteCategories[i % quoteCategories.length];
-  const text = `${quoteStarts[i % quoteStarts.length]} ${quoteMiddles[Math.floor(i / quoteStarts.length) % quoteMiddles.length]}. ${quoteEnds[Math.floor(i / (quoteStarts.length * quoteMiddles.length)) % quoteEnds.length]}`;
-  const desc = descs[i % descs.length];
-  return { category, text, desc };
-});
-
+const TOTAL_QUOTES = 100000;
 const youtubeUrl = "https://www.youtube.com/@%EC%8B%9C%EB%8B%88%EC%96%B4%EC%9D%98%EC%A7%80%ED%98%9C%EC%83%81%EC%9E%A5";
+
+function makeQuote(index) {
+  const category = quoteCategories[index % quoteCategories.length];
+  const text = `${quoteStarts[index % quoteStarts.length]} ${quoteMiddles[Math.floor(index / quoteStarts.length) % quoteMiddles.length]}. ${quoteEnds[Math.floor(index / (quoteStarts.length * quoteMiddles.length)) % quoteEnds.length]}`;
+  const desc = descs[index % descs.length];
+  return { id: index, category, text, desc };
+}
+
+function findQuotes({ keyword, selectedCategory, limit = 200 }) {
+  const result = [];
+  let hasMore = false;
+
+  for (let i = 0; i < TOTAL_QUOTES; i += 1) {
+    const q = makeQuote(i);
+    const categoryMatch = selectedCategory === "전체" || q.category === selectedCategory;
+    const keywordMatch = !keyword || q.text.includes(keyword) || q.category.includes(keyword) || q.desc.includes(keyword);
+
+    if (categoryMatch && keywordMatch) {
+      if (result.length < limit) result.push(q);
+      else {
+        hasMore = true;
+        break;
+      }
+    }
+  }
+
+  return { result, hasMore };
+}
 
 export default function App() {
   const [tab, setTab] = useState("home");
   const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem("haruJihyeFavorites");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("haruJihyeFavorites");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
   const [keyword, setKeyword] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("전체");
 
   const todayQuote = useMemo(() => {
     const today = new Date();
-    const index = (today.getFullYear() + today.getMonth() + today.getDate()) % quotes.length;
-    return quotes[index];
+    const index = (today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate()) % TOTAL_QUOTES;
+    return makeQuote(index);
   }, []);
 
   const [homeQuote, setHomeQuote] = useState(todayQuote);
   const categories = ["전체", ...quoteCategories];
 
-  const filteredQuotes = quotes.filter((q) => {
-    const categoryMatch = selectedCategory === "전체" || q.category === selectedCategory;
-    const keywordMatch = !keyword || q.text.includes(keyword) || q.category.includes(keyword) || q.desc.includes(keyword);
-    return categoryMatch && keywordMatch;
-  });
-
-  const favoriteQuotes = quotes.filter((q) => favorites.includes(q.text));
+  const quoteList = useMemo(() => findQuotes({ keyword, selectedCategory, limit: 200 }), [keyword, selectedCategory]);
 
   useEffect(() => {
     localStorage.setItem("haruJihyeFavorites", JSON.stringify(favorites));
   }, [favorites]);
 
   function changeHomeQuote() {
-    const randomIndex = Math.floor(Math.random() * quotes.length);
-    setHomeQuote(quotes[randomIndex]);
+    const randomIndex = Math.floor(Math.random() * TOTAL_QUOTES);
+    setHomeQuote(makeQuote(randomIndex));
   }
 
-  function toggleFavorite(text) {
-    setFavorites((prev) => (prev.includes(text) ? prev.filter((v) => v !== text) : [...prev, text]));
+  function isFavorite(q) {
+    return favorites.some((item) => item.text === q.text);
+  }
+
+  function toggleFavorite(q) {
+    setFavorites((prev) => {
+      if (prev.some((item) => item.text === q.text)) {
+        return prev.filter((item) => item.text !== q.text);
+      }
+      return [q, ...prev].slice(0, 300);
+    });
   }
 
   function openYoutube() {
@@ -170,7 +199,7 @@ export default function App() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 1080, 1350);
 
-    ctx.fillStyle = "rgba(255,255,255,0.94)";
+    ctx.fillStyle = "rgba(255,255,255,0.96)";
     roundRect(ctx, 90, 170, 900, 920, 64);
     ctx.fill();
 
@@ -189,19 +218,19 @@ export default function App() {
     ctx.fillText(q.category, 540, 430);
 
     ctx.fillStyle = "#000000";
-    ctx.font = "900 56px Arial";
+    ctx.font = "900 52px Arial";
     const quoteLines = wrapText(ctx, `“${q.text}”`, 780);
     let y = 570;
-    quoteLines.forEach((line) => {
+    quoteLines.slice(0, 6).forEach((line) => {
       ctx.fillText(line, 540, y);
-      y += 78;
+      y += 76;
     });
 
     ctx.fillStyle = "#292524";
     ctx.font = "800 32px Arial";
     const descLines = wrapText(ctx, q.desc, 760);
-    y += 60;
-    descLines.forEach((line) => {
+    y += 55;
+    descLines.slice(0, 3).forEach((line) => {
       ctx.fillText(line, 540, y);
       y += 50;
     });
@@ -252,7 +281,7 @@ export default function App() {
   }
 
   function QuoteCard({ q, premium = false }) {
-    const isFavorite = favorites.includes(q.text);
+    const saved = isFavorite(q);
     return (
       <div style={premium ? styles.premiumCard : styles.card}>
         <div style={styles.cardTop}>
@@ -263,9 +292,7 @@ export default function App() {
         <h2 style={premium ? styles.heroQuote : styles.quote}>{q.text}</h2>
         <p style={styles.desc}>{q.desc}</p>
         <div style={styles.buttonRow}>
-          <button style={isFavorite ? styles.savedButton : styles.button} onClick={() => toggleFavorite(q.text)}>
-            {isFavorite ? "저장됨" : "저장"}
-          </button>
+          <button style={saved ? styles.savedButton : styles.button} onClick={() => toggleFavorite(q)}>{saved ? "저장됨" : "저장"}</button>
           <button style={styles.button} onClick={() => shareQuote(q)}>공유</button>
           <button style={styles.button} onClick={() => downloadQuoteImage(q)}>이미지</button>
           <button style={styles.outlineButton} onClick={openYoutube}>영상 보기</button>
@@ -299,28 +326,17 @@ export default function App() {
       {tab === "quotes" && (
         <main style={styles.main}>
           <div style={styles.searchBox}>
-            <input
-              style={styles.input}
-              placeholder="원하는 명언을 검색하세요"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-            />
+            <input style={styles.input} placeholder="원하는 명언을 검색하세요" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
             <div style={styles.categoryButtons}>
               {categories.map((cat) => (
-                <button
-                  key={cat}
-                  style={selectedCategory === cat ? styles.categoryActiveButton : styles.categoryButton}
-                  onClick={() => setSelectedCategory(cat)}
-                >
+                <button key={cat} style={selectedCategory === cat ? styles.categoryActiveButton : styles.categoryButton} onClick={() => setSelectedCategory(cat)}>
                   {cat}
                 </button>
               ))}
             </div>
           </div>
-          {filteredQuotes.slice(0, 200).map((q, i) => <QuoteCard key={i} q={q} />)}
-          {filteredQuotes.length > 200 && (
-            <p style={styles.notice}>검색 결과가 많아 상위 200개만 먼저 보여줍니다. 원하는 주제로 검색하거나 카테고리를 선택해보세요.</p>
-          )}
+          {quoteList.result.map((q) => <QuoteCard key={q.id} q={q} />)}
+          {quoteList.hasMore && <p style={styles.notice}>검색 결과가 많아 상위 200개만 먼저 보여줍니다. 원하는 주제로 검색하거나 카테고리를 선택해보세요.</p>}
         </main>
       )}
 
@@ -338,12 +354,8 @@ export default function App() {
 
       {tab === "favorites" && (
         <main style={styles.main}>
-          <h2 style={styles.title}>저장한 명언</h2>
-          {favoriteQuotes.length === 0 ? (
-            <p style={styles.empty}>아직 저장한 명언이 없습니다.</p>
-          ) : (
-            favoriteQuotes.slice(0, 200).map((q, i) => <QuoteCard key={i} q={q} />)
-          )}
+          <h2 style={styles.pageTitle}>저장한 명언</h2>
+          {favorites.length === 0 ? <p style={styles.empty}>아직 저장한 명언이 없습니다.</p> : favorites.slice(0, 200).map((q) => <QuoteCard key={q.text} q={q} />)}
         </main>
       )}
 
@@ -352,18 +364,9 @@ export default function App() {
           <div style={styles.infoCard}>
             <h2 style={styles.title}>앱 정보</h2>
             <p style={styles.desc}>하루지혜는 인생, 가족, 건강, 돈과 노후, 인간관계에 대한 짧고 따뜻한 명언을 전하는 앱입니다.</p>
-            <div style={styles.infoBox}>
-              <strong>앱 이름</strong>
-              <span>하루지혜</span>
-            </div>
-            <div style={styles.infoBox}>
-              <strong>버전</strong>
-              <span>1.0.0</span>
-            </div>
-            <div style={styles.infoBox}>
-              <strong>문의</strong>
-              <span>passclick3366@gmail.com</span>
-            </div>
+            <div style={styles.infoBox}><strong>앱 이름</strong><span>하루지혜</span></div>
+            <div style={styles.infoBox}><strong>버전</strong><span>1.0.0</span></div>
+            <div style={styles.infoBox}><strong>문의</strong><span>passclick3366@gmail.com</span></div>
           </div>
 
           <div style={styles.infoCard}>
@@ -387,285 +390,47 @@ export default function App() {
 }
 
 const styles = {
-  app: {
-    minHeight: "100vh",
-    background: "linear-gradient(160deg, #1c1208 0%, #3b220f 22%, #fff7ed 42%, #fffaf0 100%)",
-    color: "#000000",
-    paddingBottom: 92,
-    fontFamily: "Arial, sans-serif",
-    position: "relative",
-    overflowX: "hidden",
-  },
-  backgroundGlow: {
-    position: "fixed",
-    top: -160,
-    right: -120,
-    width: 320,
-    height: 320,
-    borderRadius: "50%",
-    background: "rgba(245, 158, 11, 0.45)",
-    filter: "blur(50px)",
-    pointerEvents: "none",
-  },
+  app: { minHeight: "100vh", background: "linear-gradient(160deg, #1c1208 0%, #3b220f 22%, #fff7ed 42%, #fffaf0 100%)", color: "#000", paddingBottom: 98, fontFamily: "Arial, sans-serif", position: "relative", overflowX: "hidden" },
+  backgroundGlow: { position: "fixed", top: -160, right: -120, width: 320, height: 320, borderRadius: "50%", background: "rgba(245,158,11,0.45)", filter: "blur(50px)", pointerEvents: "none" },
   header: { padding: "26px 18px 14px", textAlign: "center", color: "white" },
-  logoBadge: {
-    width: 58,
-    height: 58,
-    margin: "0 auto 10px",
-    borderRadius: 18,
-    background: "linear-gradient(135deg, #facc15, #f97316)",
-    color: "#111111",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 22,
-    fontWeight: 900,
-    boxShadow: "0 12px 30px rgba(0,0,0,0.28)",
-  },
-  logo: { margin: 0, fontSize: 38, fontWeight: 900, letterSpacing: "-1px", color: "#ffffff" },
+  logoBadge: { width: 58, height: 58, margin: "0 auto 10px", borderRadius: 18, background: "linear-gradient(135deg, #facc15, #f97316)", color: "#111", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, boxShadow: "0 12px 30px rgba(0,0,0,0.28)" },
+  logo: { margin: 0, fontSize: 38, fontWeight: 900, letterSpacing: "-1px", color: "#fff" },
   subtitle: { margin: "8px 0 0", color: "#fff7ed", fontWeight: 800, fontSize: 15 },
   main: { maxWidth: 760, margin: "0 auto", padding: "12px 16px" },
-  hero: {
-    background: "linear-gradient(135deg, #f59e0b, #ea580c)",
-    color: "#111111",
-    padding: 26,
-    borderRadius: 30,
-    marginBottom: 18,
-    boxShadow: "0 18px 42px rgba(92, 38, 4, 0.28)",
-    border: "1px solid rgba(255,255,255,0.45)",
-  },
-  heroSmall: { margin: 0, fontSize: 15, fontWeight: 900, color: "#111111", opacity: 1 },
-  heroTitle: { margin: "8px 0 0", fontSize: 25, lineHeight: 1.35, fontWeight: 900, wordBreak: "keep-all", color: "#000000" },
-  premiumCard: {
-    background: "linear-gradient(180deg, #ffffff 0%, #fff7ed 100%)",
-    color: "#000000",
-    padding: 28,
-    borderRadius: 32,
-    marginBottom: 16,
-    boxShadow: "0 24px 54px rgba(0,0,0,0.16)",
-    border: "1px solid rgba(245,158,11,0.35)",
-    opacity: 1,
-  },
-  card: {
-    background: "#ffffff",
-    color: "#000000",
-    padding: 24,
-    borderRadius: 26,
-    marginBottom: 16,
-    boxShadow: "0 12px 30px rgba(0,0,0,0.10)",
-    border: "1px solid rgba(146,64,14,0.12)",
-    opacity: 1,
-  },
+  hero: { background: "linear-gradient(135deg, #f59e0b, #ea580c)", color: "#111", padding: 26, borderRadius: 30, marginBottom: 18, boxShadow: "0 18px 42px rgba(92,38,4,0.28)", border: "1px solid rgba(255,255,255,0.45)" },
+  heroSmall: { margin: 0, fontSize: 15, fontWeight: 900, color: "#111" },
+  heroTitle: { margin: "8px 0 0", fontSize: 25, lineHeight: 1.35, fontWeight: 900, wordBreak: "keep-all", color: "#000" },
+  premiumCard: { background: "linear-gradient(180deg, #fff 0%, #fff7ed 100%)", color: "#000", padding: 28, borderRadius: 32, marginBottom: 16, boxShadow: "0 24px 54px rgba(0,0,0,0.16)", border: "1px solid rgba(245,158,11,0.35)" },
+  card: { background: "#fff", color: "#000", padding: 24, borderRadius: 26, marginBottom: 16, boxShadow: "0 12px 30px rgba(0,0,0,0.10)", border: "1px solid rgba(146,64,14,0.12)" },
   cardTop: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 },
-  category: {
-    display: "inline-block",
-    background: "#fef3c7",
-    color: "#000000",
-    padding: "8px 15px",
-    borderRadius: 999,
-    fontWeight: 900,
-    fontSize: 15,
-    opacity: 1,
-  },
+  category: { display: "inline-block", background: "#fef3c7", color: "#000", padding: "8px 15px", borderRadius: 999, fontWeight: 900, fontSize: 15 },
   badge: { color: "#7c2d12", fontWeight: 900, fontSize: 13 },
   quoteMark: { fontSize: 54, lineHeight: 0.7, color: "#f59e0b", fontWeight: 900, marginTop: 12 },
-  heroQuote: { fontSize: 33, lineHeight: 1.45, margin: "0 0 12px", wordBreak: "keep-all", color: "#000000", fontWeight: 900, opacity: 1 },
-  quote: { fontSize: 29, lineHeight: 1.45, margin: "0 0 12px", wordBreak: "keep-all", color: "#000000", fontWeight: 900, opacity: 1 },
-  desc: { color: "#111111", lineHeight: 1.75, fontSize: 18, fontWeight: 800, opacity: 1 },
-  title: { fontSize: 28, margin: "0 0 14px", fontWeight: 900, color: "#000000" },
-  buttonRow: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 20, opacity: 1 },
-  button: {
-    border: 0,
-    background: "linear-gradient(135deg, #f59e0b, #f97316)",
-    color: "#000000",
-    padding: "14px 18px",
-    borderRadius: 16,
-    fontWeight: 900,
-    cursor: "pointer",
-    fontSize: 15,
-    boxShadow: "0 8px 18px rgba(245,158,11,0.26)",
-    opacity: 1,
-  },
-  savedButton: {
-    border: 0,
-    background: "#111111",
-    color: "#ffffff",
-    padding: "14px 18px",
-    borderRadius: 16,
-    fontWeight: 900,
-    cursor: "pointer",
-    fontSize: 15,
-  },
-  outlineButton: {
-    border: "2px solid #f59e0b",
-    background: "#ffffff",
-    color: "#000000",
-    padding: "12px 16px",
-    borderRadius: 16,
-    fontWeight: 900,
-    cursor: "pointer",
-    fontSize: 15,
-    opacity: 1,
-  },
-  bigButton: {
-    width: "100%",
-    border: 0,
-    background: "linear-gradient(135deg, #dc2626, #991b1b)",
-    color: "white",
-    padding: 17,
-    borderRadius: 18,
-    fontSize: 18,
-    fontWeight: 900,
-    cursor: "pointer",
-    boxShadow: "0 12px 26px rgba(220,38,38,0.24)",
-  },
-  randomButton: {
-    width: "100%",
-    border: 0,
-    background: "linear-gradient(135deg, #7c2d12, #431407)",
-    color: "white",
-    padding: 18,
-    borderRadius: 20,
-    fontSize: 19,
-    fontWeight: 900,
-    cursor: "pointer",
-    marginBottom: 16,
-    boxShadow: "0 14px 28px rgba(67,20,7,0.28)",
-  },
-  searchBox: {
-    background: "rgba(255,255,255,0.92)",
-    padding: 14,
-    borderRadius: 24,
-    marginBottom: 16,
-    boxShadow: "0 12px 28px rgba(0,0,0,0.10)",
-  },
-  input: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: 17,
-    borderRadius: 18,
-    border: "2px solid #f59e0b",
-    fontSize: 17,
-    marginBottom: 12,
-    color: "#000000",
-    fontWeight: 800,
-    outline: "none",
-  },
+  heroQuote: { fontSize: 32, lineHeight: 1.45, margin: "0 0 12px", wordBreak: "keep-all", color: "#000", fontWeight: 900 },
+  quote: { fontSize: 29, lineHeight: 1.45, margin: "0 0 12px", wordBreak: "keep-all", color: "#000", fontWeight: 900 },
+  desc: { color: "#111", lineHeight: 1.75, fontSize: 18, fontWeight: 800 },
+  title: { fontSize: 28, margin: "0 0 14px", fontWeight: 900, color: "#000" },
+  pageTitle: { fontSize: 30, margin: "0 0 18px", fontWeight: 900, color: "#fff" },
+  buttonRow: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 20 },
+  button: { border: 0, background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#000", padding: "14px 18px", borderRadius: 16, fontWeight: 900, cursor: "pointer", fontSize: 15, boxShadow: "0 8px 18px rgba(245,158,11,0.26)" },
+  savedButton: { border: 0, background: "#111", color: "#fff", padding: "14px 18px", borderRadius: 16, fontWeight: 900, cursor: "pointer", fontSize: 15 },
+  outlineButton: { border: "2px solid #f59e0b", background: "#fff", color: "#000", padding: "12px 16px", borderRadius: 16, fontWeight: 900, cursor: "pointer", fontSize: 15 },
+  bigButton: { width: "100%", border: 0, background: "linear-gradient(135deg, #dc2626, #991b1b)", color: "white", padding: 17, borderRadius: 18, fontSize: 18, fontWeight: 900, cursor: "pointer", boxShadow: "0 12px 26px rgba(220,38,38,0.24)" },
+  randomButton: { width: "100%", border: 0, background: "linear-gradient(135deg, #7c2d12, #431407)", color: "white", padding: 18, borderRadius: 20, fontSize: 19, fontWeight: 900, cursor: "pointer", marginBottom: 16, boxShadow: "0 14px 28px rgba(67,20,7,0.28)" },
+  searchBox: { background: "rgba(255,255,255,0.92)", padding: 14, borderRadius: 24, marginBottom: 16, boxShadow: "0 12px 28px rgba(0,0,0,0.10)" },
+  input: { width: "100%", boxSizing: "border-box", padding: 17, borderRadius: 18, border: "2px solid #f59e0b", fontSize: 17, marginBottom: 12, color: "#000", fontWeight: 800, outline: "none" },
   categoryButtons: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 2 },
-  categoryButton: {
-    border: 0,
-    background: "#ffffff",
-    color: "#000000",
-    padding: "11px 15px",
-    borderRadius: 999,
-    fontWeight: 900,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-  },
-  categoryActiveButton: {
-    border: 0,
-    background: "#f59e0b",
-    color: "#000000",
-    padding: "11px 15px",
-    borderRadius: 999,
-    fontWeight: 900,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    boxShadow: "0 8px 18px rgba(245,158,11,0.35)",
-  },
-  ad: {
-    background: "rgba(255,255,255,0.82)",
-    border: "1px dashed #92400e",
-    padding: 20,
-    borderRadius: 20,
-    textAlign: "center",
-    color: "#111111",
-    fontWeight: 900,
-  },
-  empty: { background: "white", padding: 30, borderRadius: 22, textAlign: "center", color: "#111111", fontWeight: 900 },
-  notice: { background: "#fff7ed", color: "#111111", padding: 16, borderRadius: 16, textAlign: "center", fontWeight: 900, lineHeight: 1.6 },
-  youtubeCard: {
-    background: "#ffffff",
-    padding: 26,
-    borderRadius: 30,
-    marginBottom: 16,
-    boxShadow: "0 18px 42px rgba(0,0,0,0.14)",
-  },
-  infoCard: {
-    background: "#ffffff",
-    padding: 26,
-    borderRadius: 30,
-    marginBottom: 16,
-    boxShadow: "0 18px 42px rgba(0,0,0,0.14)",
-    border: "1px solid rgba(146,64,14,0.12)",
-  },
-  infoBox: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
-    background: "#fff7ed",
-    color: "#000000",
-    padding: 16,
-    borderRadius: 18,
-    marginTop: 10,
-    fontWeight: 900,
-    wordBreak: "break-all",
-  },
-  policyText: {
-    color: "#111111",
-    lineHeight: 1.8,
-    fontSize: 17,
-    fontWeight: 800,
-    wordBreak: "keep-all",
-  },
-  youtubeIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    background: "#dc2626",
-    color: "white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 24,
-    marginBottom: 16,
-    fontWeight: 900,
-  },
-  nav: {
-    position: "fixed",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    display: "grid",
-    gridTemplateColumns: "repeat(5, 1fr)",
-    gap: 7,
-    background: "rgba(255,255,255,0.96)",
-    padding: "10px 10px 12px",
-    boxShadow: "0 -12px 28px rgba(0,0,0,0.16)",
-    backdropFilter: "blur(12px)",
-    borderTop: "1px solid rgba(146,64,14,0.18)",
-  },
-  navBtn: {
-    border: 0,
-    background: "#ffffff",
-    color: "#000000",
-    padding: 15,
-    borderRadius: 16,
-    fontWeight: 900,
-    cursor: "pointer",
-    fontSize: 15,
-    opacity: 1,
-  },
-  navActive: {
-    border: 0,
-    background: "linear-gradient(135deg, #f59e0b, #f97316)",
-    color: "#000000",
-    padding: 15,
-    borderRadius: 16,
-    fontWeight: 900,
-    cursor: "pointer",
-    fontSize: 15,
-    boxShadow: "0 8px 18px rgba(245,158,11,0.35)",
-  },
+  categoryButton: { border: 0, background: "#fff", color: "#000", padding: "11px 15px", borderRadius: 999, fontWeight: 900, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" },
+  categoryActiveButton: { border: 0, background: "#f59e0b", color: "#000", padding: "11px 15px", borderRadius: 999, fontWeight: 900, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 8px 18px rgba(245,158,11,0.35)" },
+  ad: { background: "rgba(255,255,255,0.82)", border: "1px dashed #92400e", padding: 20, borderRadius: 20, textAlign: "center", color: "#111", fontWeight: 900 },
+  empty: { background: "white", padding: 30, borderRadius: 22, textAlign: "center", color: "#111", fontWeight: 900 },
+  notice: { background: "#fff7ed", color: "#111", padding: 16, borderRadius: 16, textAlign: "center", fontWeight: 900, lineHeight: 1.6 },
+  youtubeCard: { background: "#fff", padding: 26, borderRadius: 30, marginBottom: 16, boxShadow: "0 18px 42px rgba(0,0,0,0.14)" },
+  youtubeIcon: { width: 58, height: 58, borderRadius: 18, background: "#dc2626", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 16, fontWeight: 900 },
+  infoCard: { background: "#fff", padding: 26, borderRadius: 30, marginBottom: 16, boxShadow: "0 18px 42px rgba(0,0,0,0.14)", border: "1px solid rgba(146,64,14,0.12)" },
+  infoBox: { display: "flex", justifyContent: "space-between", gap: 12, background: "#fff7ed", color: "#000", padding: 16, borderRadius: 18, marginTop: 10, fontWeight: 900, wordBreak: "break-all" },
+  policyText: { color: "#111", lineHeight: 1.8, fontSize: 17, fontWeight: 800, wordBreak: "keep-all" },
+  nav: { position: "fixed", bottom: 0, left: 0, right: 0, display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 7, background: "rgba(255,255,255,0.96)", padding: "10px 10px 12px", boxShadow: "0 -12px 28px rgba(0,0,0,0.16)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(146,64,14,0.18)" },
+  navBtn: { border: 0, background: "#fff", color: "#000", padding: 15, borderRadius: 16, fontWeight: 900, cursor: "pointer", fontSize: 15 },
+  navActive: { border: 0, background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#000", padding: 15, borderRadius: 16, fontWeight: 900, cursor: "pointer", fontSize: 15, boxShadow: "0 8px 18px rgba(245,158,11,0.35)" },
 };
