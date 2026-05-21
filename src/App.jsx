@@ -40,7 +40,7 @@ const descs = [
   "오늘의 한 문장이 내일의 태도를 바꿀 수 있습니다."
 ];
 
-const quotes = Array.from({ length: 1000 }, (_, i) => {
+const quotes = Array.from({ length: 100000 }, (_, i) => {
   const category = quoteCategories[i % quoteCategories.length];
   const text = `${quoteStarts[i % quoteStarts.length]} ${quoteMiddles[Math.floor(i / quoteStarts.length) % quoteMiddles.length]}. ${quoteEnds[Math.floor(i / (quoteStarts.length * quoteMiddles.length)) % quoteEnds.length]}`;
   const desc = descs[i % descs.length];
@@ -167,7 +167,10 @@ export default function App() {
               </button>
             ))}
           </div>
-          {filteredQuotes.map((q, i) => <QuoteCard key={i} q={q} />)}
+          {filteredQuotes.slice(0, 200).map((q, i) => <QuoteCard key={i} q={q} />)}
+          {filteredQuotes.length > 200 && (
+            <p style={styles.notice}>검색 결과가 많아 상위 200개만 먼저 보여줍니다. 원하는 주제로 검색하거나 카테고리를 선택해보세요.</p>
+          )
         </main>
       )}
 
@@ -185,7 +188,7 @@ export default function App() {
       {tab === "favorites" && (
         <main style={styles.main}>
           <h2 style={styles.title}>저장한 명언</h2>
-          {favoriteQuotes.length === 0 ? <p style={styles.empty}>아직 저장한 명언이 없습니다.</p> : favoriteQuotes.map((q, i) => <QuoteCard key={i} q={q} />)}
+          {favoriteQuotes.length === 0 ? <p style={styles.empty}>아직 저장한 명언이 없습니다.</p> : favoriteQuotes.slice(0, 200).map((q, i) => <QuoteCard key={i} q={q} />)}
         </main>
       )}
 
@@ -208,14 +211,22 @@ const styles = {
   hero: { background: "linear-gradient(135deg, #f59e0b, #ea580c)", color: "white", padding: 24, borderRadius: 24, marginBottom: 16, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" },
   card: { background: "#ffffff", color: "#000000", padding: 24, borderRadius: 24, marginBottom: 16, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", opacity: 1 },
   category: { display: "inline-block", background: "#fef3c7", color: "#000000", padding: "7px 14px", borderRadius: 999, fontWeight: 900, marginBottom: 14, fontSize: 15, opacity: 1 },
-  quote: { fontSize: 32, lineHeight: 1.45, margin: "10px 0", wordBreak: "keep-all", color: "#000000", fontWeight: 900, opacity: 1 }, { desc: { color: "#111111", lineHeight: 1.75, fontSize: 18, fontWeight: 800, opacity: 1 },: { fontSize: 26, margin: "0 0 12px" },
-  buttonRobuttonRow: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18, opacity: 1 },n: button: { border: 0, background: "#f59e0b", color: "#000000", padding: "13px 17px", borderRadius: 14, fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: 1 },neBoutlineButton: { border: "2px solid #f59e0b", background: "#ffffff", color: "#000000", padding: "12px 16px", borderRadius: 14, fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: 1 },tton: { width: "100%", border: 0, background: "#dc2626", color: "white", padding: 16, borderRadius: 16, fontSize: 17, fontWeight: 800, cursor: "pointer" },
+  quote: { fontSize: 32, lineHeight: 1.45, margin: "10px 0", wordBreak: "keep-all", color: "#000000", fontWeight: 900, opacity: 1 },
+  desc: { color: "#111111", lineHeight: 1.75, fontSize: 18, fontWeight: 800, opacity: 1 },
+  title: { fontSize: 26, margin: "0 0 12px" },
+  buttonRow: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18, opacity: 1 },
+  button: { border: 0, background: "#f59e0b", color: "#000000", padding: "13px 17px", borderRadius: 14, fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: 1 },
+  outlineButton: { border: "2px solid #f59e0b", background: "#ffffff", color: "#000000", padding: "12px 16px", borderRadius: 14, fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: 1 },
+  bigButton: { width: "100%", border: 0, background: "#dc2626", color: "white", padding: 16, borderRadius: 16, fontSize: 17, fontWeight: 800, cursor: "pointer" },
   randomButton: { width: "100%", border: 0, background: "#92400e", color: "white", padding: 16, borderRadius: 18, fontSize: 18, fontWeight: 900, cursor: "pointer", marginBottom: 16, boxShadow: "0 8px 20px rgba(146,64,14,0.25)" },
   input: { width: "100%", boxSizing: "border-box", padding: 16, borderRadius: 18, border: "1px solid #fed7aa", fontSize: 16, marginBottom: 12 },
   categoryButtons: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, marginBottom: 12 },
   categoryButton: { border: 0, background: "white", color: "#92400e", padding: "10px 14px", borderRadius: 999, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" },
   categoryActiveButton: { border: 0, background: "#f59e0b", color: "white", padding: "10px 14px", borderRadius: 999, fontWeight: 900, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 6px 16px rgba(245,158,11,0.35)" },
   ad: { background: "#f5f5f4", border: "1px dashed #a8a29e", padding: 20, borderRadius: 18, textAlign: "center", color: "#78716c" },
-  empty: { background: "white", padding: 30, borderRadius: 20, textAlign: "center", color: "#78716c" },
+  empty: { background: "white", padding: 30, borderRadius: 20, textAlign: "center", color: "#111111", fontWeight: 800 },
+  notice: { background: "#fff7ed", color: "#111111", padding: 16, borderRadius: 16, textAlign: "center", fontWeight: 800, lineHeight: 1.6 },
   nav: { position: "fixed", bottom: 0, left: 0, right: 0, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, background: "white", padding: 10, boxShadow: "0 -8px 20px rgba(0,0,0,0.08)" },
-  navBtn: navBtn: { border: 0, background: "#ffffff", color: "#000000", padding: 14, borderRadius: 14, fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: 1 },tivnavActive: { border: 0, background: "#f59e0b", color: "#000000", padding: 14, borderRadius: 14, fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: 1 },
+  navBtn: { border: 0, background: "#ffffff", color: "#000000", padding: 14, borderRadius: 14, fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: 1 },
+  navActive: { border: 0, background: "#f59e0b", color: "#000000", padding: 14, borderRadius: 14, fontWeight: 900, cursor: "pointer", fontSize: 15, opacity: 1 },
+};
