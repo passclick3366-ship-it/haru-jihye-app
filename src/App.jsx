@@ -259,11 +259,40 @@ https://haru-jihye-app.vercel.app`;
         </main>
       )}
 
+      {tab === "info" && (
+        <main style={styles.main}>
+          <div style={styles.infoCard}>
+            <h2 style={styles.title}>앱 정보</h2>
+            <p style={styles.desc}>하루지혜는 인생, 가족, 건강, 돈과 노후, 인간관계에 대한 짧고 따뜻한 명언을 전하는 앱입니다.</p>
+            <div style={styles.infoBox}>
+              <strong>앱 이름</strong>
+              <span>하루지혜</span>
+            </div>
+            <div style={styles.infoBox}>
+              <strong>버전</strong>
+              <span>1.0.0</span>
+            </div>
+            <div style={styles.infoBox}>
+              <strong>문의</strong>
+              <span>passclick3366@gmail.com</span>
+            </div>
+          </div>
+
+          <div style={styles.infoCard}>
+            <h2 style={styles.title}>개인정보처리방침</h2>
+            <p style={styles.policyText}>하루지혜는 현재 회원가입을 받지 않으며, 이름·전화번호·주소 등 개인을 직접 식별할 수 있는 정보를 수집하지 않습니다.</p>
+            <p style={styles.policyText}>사용자가 저장한 명언은 사용자의 기기 브라우저 저장공간에만 보관됩니다. 이 정보는 외부 서버로 전송되지 않습니다.</p>
+            <p style={styles.policyText}>향후 광고 또는 분석 도구가 추가될 경우, 관련 수집 항목과 이용 목적을 본 방침에 반영하겠습니다.</p>
+          </div>
+        </main>
+      )}
+
       <nav style={styles.nav}>
         <button style={tab === "home" ? styles.navActive : styles.navBtn} onClick={() => setTab("home")}>홈</button>
         <button style={tab === "quotes" ? styles.navActive : styles.navBtn} onClick={() => setTab("quotes")}>명언</button>
         <button style={tab === "youtube" ? styles.navActive : styles.navBtn} onClick={() => setTab("youtube")}>영상</button>
         <button style={tab === "favorites" ? styles.navActive : styles.navBtn} onClick={() => setTab("favorites")}>저장</button>
+        <button style={tab === "info" ? styles.navActive : styles.navBtn} onClick={() => setTab("info")}>정보</button>
       </nav>
     </div>
   );
@@ -475,6 +504,33 @@ const styles = {
     marginBottom: 16,
     boxShadow: "0 18px 42px rgba(0,0,0,0.14)",
   },
+  infoCard: {
+    background: "#ffffff",
+    padding: 26,
+    borderRadius: 30,
+    marginBottom: 16,
+    boxShadow: "0 18px 42px rgba(0,0,0,0.14)",
+    border: "1px solid rgba(146,64,14,0.12)",
+  },
+  infoBox: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    background: "#fff7ed",
+    color: "#000000",
+    padding: 16,
+    borderRadius: 18,
+    marginTop: 10,
+    fontWeight: 900,
+    wordBreak: "break-all",
+  },
+  policyText: {
+    color: "#111111",
+    lineHeight: 1.8,
+    fontSize: 17,
+    fontWeight: 800,
+    wordBreak: "keep-all",
+  },
   youtubeIcon: {
     width: 58,
     height: 58,
@@ -494,7 +550,7 @@ const styles = {
     left: 0,
     right: 0,
     display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
+    gridTemplateColumns: "repeat(5, 1fr)",
     gap: 7,
     background: "rgba(255,255,255,0.96)",
     padding: "10px 10px 12px",
@@ -525,4 +581,3 @@ const styles = {
     boxShadow: "0 8px 18px rgba(245,158,11,0.35)",
   },
 };
-
